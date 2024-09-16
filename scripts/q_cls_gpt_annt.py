@@ -135,8 +135,7 @@ def retrieve_eval_save(args):
 
             train_df.loc[train_df["tr_qid"] == int(qid), "pred"] = pred
             train_df.loc[train_df["tr_qid"] == int(qid), "logprobs"] = logprob
-    print("{} pred. errors found that are neighther 0 or 1: ", prediction_error)
-    code.interact(local=dict(globals(), **locals()))
+    print(f"{prediction_error} pred. errors found that are neighther 0 or 1.")
 
     # save the annotated dataset
     if args.save_preds:
