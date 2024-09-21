@@ -11,12 +11,15 @@ import argparse
 import random
 import logging
 import numpy as np
+import math
 
 from tqdm import tqdm
 import pandas as pd
 from sklearn.metrics import classification_report
 
 import torch
+import torch.nn.functional as F
+from torch.nn.functional import softmax, log_softmax
 from torch.utils.data import DataLoader, Dataset, RandomSampler, SequentialSampler
 from transformers import (
     AdamW,
@@ -38,6 +41,7 @@ class IntVsDeclDataset(Dataset):
         for i in tqdm(range(len(df)), desc=f"Loading {ds_type} dataset"):
             text = df.iloc[i]["doc"]
             label = df.iloc[i]["target"]
+
             encoding = tokenizer.encode_plus(
                 text,
                 add_special_tokens=True,
@@ -56,12 +60,47 @@ class IntVsDeclDataset(Dataset):
                     "label": torch.tensor(label, dtype=torch.long),
                 }
             )
+            if args.enable_kd and ds_type == "train":
+                pred = df.iloc[i]["pred"]
+                logy_t = df.iloc[i]["logprobs"]
+                self.examples[-1]["pred"] = torch.tensor(pred, dtype=torch.long)
+                self.examples[-1]["logprob"] = torch.tensor(logy_t, dtype=torch.float)
 
     def __len__(self):
         return len(self.examples)
 
     def __getitem__(self, idx):
         return self.examples[idx]
+
+
+def kd_loss(outputs, target, pred, logy_t, T=2.0, alpha=2.5):
+    # calculate teacher logits
+    pred = torch.zeros_like(outputs.logits).scatter(1, pred.unsqueeze(1), 1)
+    t_logits = pred * torch.exp(logy_t).unsqueeze(1)
+    t_logits[pred == 0] = 1 - t_logits[pred == 1]
+    t_input_for_softmax = t_logits / T
+    s_input_for_softmax = outputs.logits / T
+
+    t_soft_label = softmax(t_input_for_softmax, dim=1)
+    softmax_loss = -torch.sum(t_soft_label * log_softmax(s_input_for_softmax, dim=1))
+
+    logy_s = log_softmax(outputs.logits, dim=1)
+    logy_t = log_softmax(t_logits, dim=1)
+    one_hot_label = F.one_hot(target, num_classes=2).float()
+    softmax_loss_s = -torch.sum(one_hot_label * logy_s, 1, keepdim=True)
+    softmax_loss_t = -torch.sum(one_hot_label * logy_t, 1, keepdim=True)
+
+    focal_weight = softmax_loss_s / (softmax_loss_t + 1e-7)
+    ratio_lower = torch.zeros(1).cuda()
+    focal_weight = torch.max(focal_weight, ratio_lower)
+    focal_weight = 1 - torch.exp(-focal_weight)
+    softmax_loss = focal_weight * softmax_loss
+
+    # hard label loss
+    hard_loss = F.cross_entropy(outputs.logits, target)
+    soft_loss = (T**2) * torch.mean(softmax_loss)
+
+    return hard_loss + alpha * soft_loss
 
 
 def train(args, model, train_ds, val_ds):
@@ -101,6 +140,16 @@ def train(args, model, train_ds, val_ds):
             label = batch["label"].to(args.device)
 
             outputs = model(input_ids, attention_mask=attention_mask, labels=label)
+            if args.enable_kd:
+                loss = kd_loss(
+                    outputs,
+                    label,
+                    batch["pred"].to(args.device),
+                    batch["logprob"].to(args.device),
+                )
+            else:
+                loss = outputs.loss
+
             loss = outputs.loss
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
@@ -123,7 +172,7 @@ def train(args, model, train_ds, val_ds):
                 if result["f1-score"] > best_f1:
                     best_f1 = result["f1-score"]
                     file_path = os.path.join(
-                        args.output_dir, "checkpoints/best_model.pt"
+                        args.output_dir, "checkpoints/best_qcls_model.pt"
                     )
                     model_to_save = model.module if hasattr(model, "module") else model
                     torch.save(model_to_save.state_dict(), file_path)
@@ -232,7 +281,7 @@ def main():
     parser.add_argument("--model_name", type=str, default="roberta-base",
                         help="Model architecture to be fine-tuned")
     # runtime parameters
-    parser.add_argument("--seq_length", type=int, default=512,
+    parser.add_argument("--seq_length", type=int, default=256,
                         help="Maximum sequence length after tokenization."
                         "Default to the max input length for the model")
     parser.add_argument("--train_batch_size", type=int, default=16,

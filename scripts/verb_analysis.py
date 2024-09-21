@@ -82,7 +82,7 @@ def print_top_verbs(verbs_pmi, subtotals, args):
     for i in range(len(bt_levels)):
         sorted_verbs = sorted(verbs_pmi.items(), key=lambda x: x[1][i], reverse=True)
         print(f"BT level - {bt_levels[i]}, Support: {subtotals[i]}")
-        for verb, pmi in sorted_verbs[:30]:
+        for verb, pmi in sorted_verbs[:10]:
             print(f"{verb}: {pmi[i]:.2f}")
         print()
 

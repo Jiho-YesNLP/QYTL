@@ -65,8 +65,8 @@ BT_LEVELS = [
     "Comprehension",
     "Application",
     "Analysis",
-    "Evaluation",
     "Synthesis",
+    "Evaluation",
 ]
 
 # assign IRREL class of the ones with PROB < 0.97
@@ -80,8 +80,8 @@ df["BT LEVEL"] = df["BT LEVEL"].replace(
         "Comprehension": 2,
         "Application": 3,
         "Analysis": 4,
-        "Evaluation": 5,
-        "Synthesis": 6,
+        "Synthesis": 5,
+        "Evaluation": 6,
         "IRREL": 0,
     }
 )
