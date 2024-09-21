@@ -1,45 +1,55 @@
 """
-This RoBERTa model classifies sentences into interrogative and
-non-interrogative sentences. The following dataset is used for training and
-testing. IntVsDecl dataset: https://tinyurl.com/4ah7w3u6
-https://tinyurl.com/25eecdyr
+A RoBERTa model for BT-level classification of questions.
+Using the {} dataset. This dataset is unbalanced, so we will need to do
+something about that. Perhaps, WeightedRandomSampler in PyTorch.
+
 """
 
 import code
 import os
 import argparse
-import random
 import logging
+import random
+import csv
+
+from tqdm import tqdm, trange
+
+import pandas as pd
 import numpy as np
 
-from tqdm import tqdm
-import pandas as pd
 from sklearn.metrics import classification_report
 
 import torch
-from torch.utils.data import DataLoader, Dataset, RandomSampler, SequentialSampler
+from torch.utils.data import (
+    DataLoader,
+    Dataset,
+    WeightedRandomSampler,
+    SequentialSampler,
+)
 from transformers import (
     AdamW,
     get_linear_schedule_with_warmup,
     RobertaConfig,
     RobertaTokenizer,
-    RobertaForSequenceClassification,
+    RobertaModel,
 )
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
+# Logger both to file and console
+logger = logging.getLogger("bt_cls")
+logger.setLevel(logging.INFO)
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 
-class IntVsDeclDataset(Dataset):
+class QBTDataset(Dataset):
     def __init__(self, df, tokenizer, args, ds_type="train"):
         self.tokenizer = tokenizer
         self.args = args
         self.examples = []
-        for i in tqdm(range(len(df)), desc=f"Loading {ds_type} dataset"):
-            text = df.iloc[i]["doc"]
-            label = df.iloc[i]["target"]
+        for i in tqdm(df.index):  # , desc=f"Loading {ds_type} dataset"):
+            q = df.iloc[i]["QUESTION"] if ds_type != "yt" else df.iloc[i]["text"]
+            label = df.iloc[i]["BT LEVEL"] if ds_type != "yt" else -1
             encoding = tokenizer.encode_plus(
-                text,
+                q,
                 add_special_tokens=True,
                 max_length=args.seq_length,
                 return_token_type_ids=False,
@@ -48,14 +58,14 @@ class IntVsDeclDataset(Dataset):
                 return_tensors="pt",
                 truncation=True,
             )
-            self.examples.append(
-                {
-                    "text": text,
-                    "input_ids": encoding["input_ids"].flatten(),
-                    "attention_mask": encoding["attention_mask"].flatten(),
-                    "label": torch.tensor(label, dtype=torch.long),
-                }
-            )
+            entry = {
+                "sid": i,
+                "text": q,
+                "input_ids": encoding["input_ids"].flatten(),
+                "attention_mask": encoding["attention_mask"].flatten(),
+                "label": torch.tensor(label, dtype=torch.long),
+            }
+            self.examples.append(entry)
 
     def __len__(self):
         return len(self.examples)
@@ -64,8 +74,34 @@ class IntVsDeclDataset(Dataset):
         return self.examples[idx]
 
 
-def train(args, model, train_ds, val_ds):
-    sampler = RandomSampler(train_ds)
+class BTClassifier(torch.nn.Module):
+    def __init__(self, model_name, num_classes=6):
+        super(BTClassifier, self).__init__()
+        self.mdl_config = RobertaConfig.from_pretrained(model_name)
+        self.model = RobertaModel.from_pretrained(model_name, config=self.mdl_config)
+        self.pre_classifier = torch.nn.Linear(
+            self.model.config.hidden_size, self.model.config.hidden_size
+        )
+        self.dropout = torch.nn.Dropout(0.1)
+        self.classifier = torch.nn.Linear(self.model.config.hidden_size, num_classes)
+
+    def forward(self, input_ids, attention_mask, labels=None):
+        outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+        hidden_states = outputs[0]
+        pooler = hidden_states[:, 0]
+        pooler = torch.nn.ReLU()(self.pre_classifier(pooler))
+        pooler = self.dropout(pooler)
+        logits = self.classifier(pooler)
+
+        if labels is not None:
+            loss_fct = torch.nn.CrossEntropyLoss()
+            loss = loss_fct(logits.view(-1, logits.size(-1)), labels.view(-1))
+            return loss, logits
+        else:
+            return logits
+
+
+def train(args, model, train_ds, val_ds, sampler):
     tr_loader = DataLoader(
         train_ds, sampler=sampler, batch_size=args.train_batch_size, num_workers=0
     )
@@ -100,8 +136,7 @@ def train(args, model, train_ds, val_ds):
             attention_mask = batch["attention_mask"].to(args.device)
             label = batch["label"].to(args.device)
 
-            outputs = model(input_ids, attention_mask=attention_mask, labels=label)
-            loss = outputs.loss
+            loss, _ = model(input_ids, attention_mask=attention_mask, labels=label)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
 
@@ -123,7 +158,7 @@ def train(args, model, train_ds, val_ds):
                 if result["f1-score"] > best_f1:
                     best_f1 = result["f1-score"]
                     file_path = os.path.join(
-                        args.output_dir, "checkpoints/best_model.pt"
+                        args.output_dir, "checkpoints/best_bt_cls_model.pt"
                     )
                     model_to_save = model.module if hasattr(model, "module") else model
                     torch.save(model_to_save.state_dict(), file_path)
@@ -153,9 +188,10 @@ def evaluate(args, model, val_ds):
         label = batch["label"].to(args.device)
 
         with torch.no_grad():
-            outputs = model(input_ids, attention_mask=attention_mask, labels=label)
-            eval_loss += outputs.loss.item()
-            logits.append(outputs.logits.cpu().numpy())
+            eval_loss, outputs = model(
+                input_ids, attention_mask=attention_mask, labels=label
+            )
+            logits.append(outputs.cpu().numpy())
             labels.append(label.cpu().numpy())
 
     # validation loss
@@ -168,44 +204,9 @@ def evaluate(args, model, val_ds):
     preds = np.argmax(logits, axis=1)
 
     result = classification_report(labels, preds, output_dict=True)
-    print(result)
+    print(result["weighted avg"])
 
     return result["weighted avg"]
-
-
-def test(args, model, test_ds):
-    model.eval()
-    test_sampler = SequentialSampler(test_ds)
-    test_loader = DataLoader(
-        test_ds, sampler=test_sampler, batch_size=args.eval_batch_size, num_workers=0
-    )
-
-    logger.info("***** Running Test *****")
-    logger.info("  Num examples = %d", len(test_ds))
-    logger.info("  Batch size = %d", args.eval_batch_size)
-
-    logits = []
-    labels = []
-
-    for batch in tqdm(test_loader, desc="testing"):
-        input_ids = batch["input_ids"].to(args.device)
-        attention_mask = batch["attention_mask"].to(args.device)
-        label = batch["label"].to(args.device)
-
-        with torch.no_grad():
-            outputs = model(input_ids, attention_mask=attention_mask, labels=label)
-            logits.append(outputs.logits.cpu().numpy())
-            labels.append(label.cpu().numpy())
-
-    # classification report
-    logits = np.concatenate(logits, axis=0)
-    labels = np.concatenate(labels, axis=0)
-    preds = np.argmax(logits, axis=1)
-
-    result = classification_report(labels, preds, output_dict=True)
-    print(result)
-
-    return
 
 
 def set_seed(seed, use_cuda=False):
@@ -220,26 +221,25 @@ def main():
     parser = argparse.ArgumentParser()
     # fmt: off
     # data parameters
-    parser.add_argument("--input_dir", type=str, default="data/IntVsDecl")
+    parser.add_argument("--input_dir", type=str, default="data/q_bt")
     parser.add_argument("--train_file", type=str, default="train.csv")
-    parser.add_argument("--val_file", type=str, default="val.csv")
     parser.add_argument("--test_file", type=str, default="test.csv")
     parser.add_argument("--output_dir", type=str, default="data/output")
     parser.add_argument("--chkpt_path", type=str, 
-                        default="data/output/checkpoints/best_model.pt",
+                        default="data/output/checkpoints/btcls_best.pt",
                         help="Path to the model checkpoint")
     # model parameters
     parser.add_argument("--model_name", type=str, default="roberta-base",
                         help="Model architecture to be fine-tuned")
     # runtime parameters
-    parser.add_argument("--seq_length", type=int, default=512,
+    parser.add_argument("--seq_length", type=int, default=126,
                         help="Maximum sequence length after tokenization."
                         "Default to the max input length for the model")
     parser.add_argument("--train_batch_size", type=int, default=16,
                         help="Batch size for training")
     parser.add_argument("--eval_batch_size", type=int, default=16,
                         help="Batch size for evaluation")
-    parser.add_argument("--epochs", type=int, default=8,
+    parser.add_argument("--epochs", type=int, default=6,
                         help="Number of epochs for training")
     parser.add_argument("--log_interval", type=int, default=100,
                         help="Interval for logging")
@@ -259,53 +259,127 @@ def main():
                         help="Whether to run evaluation")
     parser.add_argument("--do_predict", action="store_true",
                         help="Whether to run prediction")
-
-    # RQ0: Efficacy of Knowledge Distillation
-    parser.add_argument("--enable_kd", action="store_true", 
-                        help="Enable knowledge distillation")
     # fmt: on
 
     args = parser.parse_args()
 
     # setup the device
     args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    logger.info(f"Using device: {args.device}")
 
-    if args.enable_kd:
-        args.train_file = "q_cls_gpt_annotated.csv"
-    # TODO. set filename for the model to be saved
+    # Load the data
+    logger.info("Loading training data")
+    train_df = pd.read_csv(os.path.join(args.input_dir, args.train_file))
+    test_df = pd.read_csv(os.path.join(args.input_dir, args.test_file))
+
+    # describe the data
+    print(train_df.head())
+    print(train_df.groupby("BT LEVEL").size())
+
+    # mapping categories to integers
+    bt_levels = [
+        "Knowledge",
+        "Comprehension",
+        "Application",
+        "Analysis",
+        "Synthesis",
+        "Evaluation",
+    ]
+    train_df["BT LEVEL"] = train_df["BT LEVEL"].apply(lambda x: bt_levels.index(x))
+    test_df["BT LEVEL"] = test_df["BT LEVEL"].apply(lambda x: bt_levels.index(x))
+
+    # split the training data into training and validation
+    train_df = train_df.sample(frac=0.9).reset_index(drop=True)
+    val_df = train_df.sample(frac=0.1).reset_index(drop=True)
 
     # set seed for everything
     set_seed(args.seed)
 
-    # Load the model and tokenizer
-    model_config = RobertaConfig.from_pretrained(args.model_name)
     tokenizer = RobertaTokenizer.from_pretrained(args.model_name)
-    model = RobertaForSequenceClassification.from_pretrained(
-        args.model_name, config=model_config
-    )
+    model = BTClassifier(args.model_name)
     logger.info("Configurations: %s", args)
 
-    # Training
     if args.do_train:
-        # Load the datasets
-        train_df = pd.read_csv(f"{args.input_dir}/{args.train_file}")
-        val_df = pd.read_csv(f"{args.input_dir}/{args.val_file}")
+        train_dataset = QBTDataset(train_df, tokenizer, args)
+        val_dataset = QBTDataset(val_df, tokenizer, args)
 
-        train_dataset = IntVsDeclDataset(train_df, tokenizer, args, ds_type="train")
-        val_dataset = IntVsDeclDataset(val_df, tokenizer, args, ds_type="val")
-        train(args, model, train_dataset, val_dataset)
-    if args.do_test:
-        if not os.path.exists(args.chkpt_path):
-            raise FileNotFoundError(f"Model checkpoint not found at {args.chkpt_path}")
+        # random weight setup
+        class_counts = train_df["BT LEVEL"].value_counts()
+        sample_weights = [1 / class_counts[i].item() for i in train_df["BT LEVEL"]]
+        sampler = WeightedRandomSampler(
+            sample_weights, len(sample_weights), replacement=True
+        )
 
+        train(args, model, train_dataset, val_dataset, sampler)
+    if args.do_predict:
+        """
+        Load the model from the checkpoint and run predictions on YouTube
+        question files.
+        """
+        if args.chkpt_path is None or not os.path.exists(args.chkpt_path):
+            logger.error("Checkpoint path not provided")
+            raise FileNotFoundError("Checkpoint path not provided")
+        # read files and create a dataset
+        cols = ["subject", "vid", "text", "votes", "replies", "is_reply"]
+        yt_df = pd.DataFrame(columns=cols)
+        entries = []
+        for file in tqdm(os.listdir("data/output/ext_questions")):
+            if file.endswith(".csv"):
+                df = pd.read_csv(f"data/output/ext_questions/{file}")
+                df["vid"] = "-".join(file.split("-")[:-2])
+                if len(df) == 0:
+                    continue
+                entries.append(df[cols])
+            yt_df = pd.concat(entries, ignore_index=True)
+
+        yt_df["BT LEVEL"] = "UNK"
+        yt_df["PROB"] = 0.0
+        yt_dataset = QBTDataset(yt_df, tokenizer, args, ds_type="yt")
+
+        # load the model
         model.load_state_dict(torch.load(args.chkpt_path, map_location=args.device))
         model.to(args.device)
         logging.info("Model loaded from %s", args.chkpt_path)
 
-        test_df = pd.read_csv(f"{args.input_dir}/{args.test_file}")
-        test_dataset = IntVsDeclDataset(test_df, tokenizer, args, ds_type="test")
-        test(args, model, test_dataset)
+        # run predictions
+        model.eval()
+        inf_sampler = SequentialSampler(yt_dataset)
+        yt_loader = DataLoader(
+            yt_dataset,
+            sampler=inf_sampler,
+            batch_size=args.eval_batch_size,
+            shuffle=False,
+        )
+
+        logger.info("***** Running predictions *****")
+        logger.info("  Num examples = %d", len(yt_dataset))
+        logger.info("  Batch size = %d", args.eval_batch_size)
+
+        results = []
+        for batch in tqdm(yt_loader, desc="predicting"):
+            input_ids = batch["input_ids"].to(args.device)
+            attention_mask = batch["attention_mask"].to(args.device)
+
+            with torch.no_grad():
+                outputs = model(input_ids, attention_mask=attention_mask)
+            # get softmax probabilities
+            probs = torch.nn.Softmax(dim=1)(outputs)
+            # take the max probability
+            max_probs = torch.max(probs, dim=1)
+            for i in range(len(input_ids)):
+                results.append(
+                    (
+                        batch["sid"][i].item(),
+                        max_probs.indices[i].item(),
+                        max_probs.values[i].item(),
+                    )
+                )
+
+        # add results to the dataframe and save to a csv file
+        for sid, pred, prob in results:
+            yt_df.loc[sid, "BT LEVEL"] = bt_levels[pred]
+            yt_df.loc[sid, "PROB"] = prob
+
+        yt_df.to_csv("data/output/q_bt_pred.csv", index=False)
 
 
 if __name__ == "__main__":

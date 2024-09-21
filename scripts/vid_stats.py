@@ -8,7 +8,6 @@ from prettytable import PrettyTable
 
 
 def count_stats():
-    # subject keys: Biology, Chemistry, Mathematics, Physics, Computer Science
     subjects = ["Biology", "Chemistry", "Mathematics", "Physics", "Computer Science"]
 
     # read data
