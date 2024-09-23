@@ -1,4 +1,3 @@
 Makefile
-data/
 .env
 temp/

@@ -10,14 +10,13 @@ import os
 import argparse
 import logging
 import random
-import csv
-
-from tqdm import tqdm, trange
+from tqdm import tqdm
 
 import pandas as pd
 import numpy as np
 
 from sklearn.metrics import classification_report
+from sklearn.model_selection import train_test_split
 
 import torch
 from torch.utils.data import (
@@ -34,10 +33,14 @@ from transformers import (
     RobertaModel,
 )
 
-# Logger both to file and console
-logger = logging.getLogger("bt_cls")
-logger.setLevel(logging.INFO)
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+# logger setup
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
+    level=logging.INFO,
+)
+logger = logging.getLogger(__name__)
 
 
 class QBTDataset(Dataset):
@@ -157,9 +160,7 @@ def train(args, model, train_ds, val_ds, sampler):
 
                 if result["f1-score"] > best_f1:
                     best_f1 = result["f1-score"]
-                    file_path = os.path.join(
-                        args.output_dir, "checkpoints/best_bt_cls_model.pt"
-                    )
+                    file_path = os.path.join(args.output_dir, args.output_file)
                     model_to_save = model.module if hasattr(model, "module") else model
                     torch.save(model_to_save.state_dict(), file_path)
                     logger.info("Model saved at %s", file_path)
@@ -167,15 +168,15 @@ def train(args, model, train_ds, val_ds, sampler):
             global_step += 1
 
 
-def evaluate(args, model, val_ds):
+def evaluate(args, model, eval_ds):
     model.eval()
-    val_sampler = SequentialSampler(val_ds)
+    val_sampler = SequentialSampler(eval_ds)
     val_loader = DataLoader(
-        val_ds, sampler=val_sampler, batch_size=args.eval_batch_size, num_workers=0
+        eval_ds, sampler=val_sampler, batch_size=args.eval_batch_size, num_workers=0
     )
 
     logger.info("***** Running evaluation *****")
-    logger.info("  Num examples = %d", len(val_ds))
+    logger.info("  Num examples = %d", len(eval_ds))
     logger.info("  Batch size = %d", args.eval_batch_size)
 
     eval_loss = 0.0
@@ -204,9 +205,13 @@ def evaluate(args, model, val_ds):
     preds = np.argmax(logits, axis=1)
 
     result = classification_report(labels, preds, output_dict=True)
-    print(result["weighted avg"])
+    print(classification_report(labels, preds, digits=3))
 
     return result["weighted avg"]
+
+
+def test(args, model, test_ds):
+    result = evaluate(args, model, test_ds)
 
 
 def set_seed(seed, use_cuda=False):
@@ -224,9 +229,11 @@ def main():
     parser.add_argument("--input_dir", type=str, default="data/q_bt")
     parser.add_argument("--train_file", type=str, default="train.csv")
     parser.add_argument("--test_file", type=str, default="test.csv")
-    parser.add_argument("--output_dir", type=str, default="data/output")
+    parser.add_argument("--output_dir", type=str,
+                        default="data/output/checkpoints")
+    parser.add_argument("--output_file", type=str, default="best_bt_cls_model.pt",)
     parser.add_argument("--chkpt_path", type=str, 
-                        default="data/output/checkpoints/btcls_best.pt",
+                        default="data/output/checkpoints/best_bt_cls_model.pt",
                         help="Path to the model checkpoint")
     # model parameters
     parser.add_argument("--model_name", type=str, default="roberta-base",
@@ -241,7 +248,7 @@ def main():
                         help="Batch size for evaluation")
     parser.add_argument("--epochs", type=int, default=6,
                         help="Number of epochs for training")
-    parser.add_argument("--log_interval", type=int, default=100,
+    parser.add_argument("--log_interval", type=int, default=64,
                         help="Interval for logging")
     parser.add_argument("--learning_rate", type=float, default=2e-5,
                         help="Learning rate for training")
@@ -281,15 +288,19 @@ def main():
         "Comprehension",
         "Application",
         "Analysis",
-        "Synthesis",
         "Evaluation",
+        "Synthesis",
     ]
     train_df["BT LEVEL"] = train_df["BT LEVEL"].apply(lambda x: bt_levels.index(x))
     test_df["BT LEVEL"] = test_df["BT LEVEL"].apply(lambda x: bt_levels.index(x))
 
     # split the training data into training and validation
-    train_df = train_df.sample(frac=0.9).reset_index(drop=True)
-    val_df = train_df.sample(frac=0.1).reset_index(drop=True)
+    train_df, val_df = train_test_split(
+        train_df, test_size=0.1, random_state=args.seed, stratify=train_df["BT LEVEL"]
+    )
+    # reset the index
+    train_df.reset_index(inplace=True)
+    val_df.reset_index(inplace=True)
 
     # set seed for everything
     set_seed(args.seed)
@@ -305,11 +316,21 @@ def main():
         # random weight setup
         class_counts = train_df["BT LEVEL"].value_counts()
         sample_weights = [1 / class_counts[i].item() for i in train_df["BT LEVEL"]]
-        sampler = WeightedRandomSampler(
-            sample_weights, len(sample_weights), replacement=True
-        )
+        sampler = WeightedRandomSampler(sample_weights, len(sample_weights))
 
         train(args, model, train_dataset, val_dataset, sampler)
+
+    if args.do_test:
+        """
+        Load a trained model and run evaluation on the test set.
+        """
+        # load the model
+        model.load_state_dict(torch.load(args.chkpt_path, map_location=args.device))
+        model.to(args.device)
+        logging.info("Model loaded from %s", args.chkpt_path)
+        test_dataset = QBTDataset(test_df, tokenizer, args)
+        test(args, model, test_dataset)
+
     if args.do_predict:
         """
         Load the model from the checkpoint and run predictions on YouTube
@@ -319,13 +340,12 @@ def main():
             logger.error("Checkpoint path not provided")
             raise FileNotFoundError("Checkpoint path not provided")
         # read files and create a dataset
-        cols = ["subject", "vid", "text", "votes", "replies", "is_reply"]
+        cols = ["subject", "text", "votes", "replies", "is_reply"]
         yt_df = pd.DataFrame(columns=cols)
         entries = []
         for file in tqdm(os.listdir("data/output/ext_questions")):
             if file.endswith(".csv"):
                 df = pd.read_csv(f"data/output/ext_questions/{file}")
-                df["vid"] = "-".join(file.split("-")[:-2])
                 if len(df) == 0:
                     continue
                 entries.append(df[cols])

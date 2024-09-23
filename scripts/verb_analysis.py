@@ -43,18 +43,18 @@ def extract_verbs(pairs):
         for word, pos in tagged:
             if pos.startswith("VB"):
                 # lemmatize the verb
-                word = lemmer.lemmatize(word.lower(), "v")
+                word = lemmer.lemmatize(word, "v").lower()
                 if word in verbs:
                     verbs[word][bt_levels.index(pair[1])] += 1
                 else:
                     verbs[word] = [0] * len(bt_levels)
                     verbs[word][bt_levels.index(pair[1])] = 1
-    # remove short words (< 3 in length) and non-alphabetic words
-    verbs = {
-        verb: cnts for verb, cnts in verbs.items() if len(verb) > 2 and verb.isalpha()
-    }
-    # remove infrequent verbs
-    verbs = {verb: cnts for verb, cnts in verbs.items() if sum(cnts) >= 5}
+        # remove short words (<= 3 in length) and non-alphabetic words
+        verbs = {
+            verb: cnts
+            for verb, cnts in verbs.items()
+            if len(verb) > 3 and verb.isalpha()
+        }
     return verbs
 
 
@@ -116,6 +116,13 @@ def run(args):
 
     # extract verbs
     verbs = extract_verbs(pairs)
+    # # sort and print the top 10 verbs per BT level using raw counts
+    # for i in range(6):
+    #     sorted_verbs = sorted(verbs.items(), key=lambda x: x[1][i], reverse=True)
+    #     print(bt_levels[i])
+    #     for verb, cnts in sorted_verbs[:10]:
+    #         print(f"{verb}: {cnts[i]}")
+    #     print()
 
     # delete verbs that appear less than 3 time
     verbs = {verb: cnts for verb, cnts in verbs.items() if sum(cnts) >= 3}
