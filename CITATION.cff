@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this repository, please cite the following work:"
+authors:
+  - family-names: Ming
+    given-names: Nong
+  - family-names:Sharma
+    given-names: Sachin
+  - family-names: Noh
+    given-names: Jiho
+title: "YouLeQD: Decoding the Cognitive Complexity of Questions and Engagement in Online Educational Videos from Learners' Perspectives"
+year: 2025
+type: conference-paper
