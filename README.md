@@ -1,7 +1,7 @@
 # YouLeQD: YouTube Learners' Questions on Bloom's Taxonomy Dataset 
 ## Introduction
 YouTube Learners' Questions on Bloom's Taxonomy Dataset (YouLeQD) is a dataset that contains 57,242 learner-posed questions from YouTube educational lecture video comments. Along with the dataset, we developed two RoBERTa-based classification models leveraging Large Language Models to detect questions and analyze their cognitive complexity using Bloom's Taxonomy. This dataset and our findings provide valuable insights into the cognitive complexity of learner-posed questions in educational videos and their relationship with interaction metrics. This can aid in the development of more effective AI models for education and improve the overall learning experience for students. 
- ![Statistics of YouLeQD](img/FE37D292-0D8B-4279-88EF-418D069C6A57.jpeg)
+ ![Statistics of YouLeQD](img/statistics.jpeg)
 
 
 ## Methodology
