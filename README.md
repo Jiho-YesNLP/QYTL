@@ -11,6 +11,7 @@ To distinguish questions from users' comments, we fine-tune a model on a publicl
 ### Bloom Taxonomy Levels of Questions extracted from Youtube Educational Video Comments
 `data/q_bt_pred.csv` are predictions of Bloom Taxonomy Levels of Questions extracted from Youtube Educational Video Comments.
 `scripts/bt_cls_roberta.py` is the python script used for BT level prediction.
+![Question Types](img/questiontype.jpeg)
 ## Citation
 This paper was selected for presentation at the 19th **International Conference on SEMANTIC COMPUTING (ICSC 2025) **, held in Laguna Hills, California.
 If you find our work helpful or interesting, we would appreciate it if you consider citing it!
