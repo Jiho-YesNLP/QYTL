@@ -7,7 +7,7 @@ YouTube Learners' Questions on Bloom's Taxonomy Dataset (YouLeQD) is a dataset t
 ## Methodology
 ### Question Extraction
 To distinguish questions from users' comments, we fine-tune a model on a publicly available dataset for interrogative sentence classification [51], which is built upon other datasets such as SQuAD [52] and SPAADIA [53]. The dataset comprises 211,168 sentences, including 80,167 non-interrogative sentences and 131,001 interrogative sentences,each with binary labels. The author of the dataset has deliber-
-ately removed question marks from some of the examples inorder to prevent the model from overfitting to the punctuation marks.To access the dataset, navigate to the file located at `data/IntVsDecl/questions_vs_statements_v1.0.csv` or visit `https://www.kaggle.com/datasets/shahrukhkhan/questions-vs-statementsclassificationdataset`.
+ately removed question marks from some of the examples inorder to prevent the model from overfitting to the punctuation marks.To access the dataset, navigate to the file located at `data/IntVsDecl/questions_vs_statements_v1.0.csv` or [click here](https://www.kaggle.com/datasets/shahrukhkhan/questions-vs-statementsclassificationdataset) for visit.
 ## Citation
 This paper was selected for presentation at the 19th **International Conference on SEMANTIC COMPUTING (ICSC 2025) **, held in Laguna Hills, California.
 If you find our work helpful or interesting, we would appreciate it if you consider citing it!
