@@ -17,7 +17,7 @@ To distinguish questions from users' comments, we fine-tune a model on a publicl
 </div>
 
 ## Citation
-This paper was selected for presentation at the 19th **International Conference on SEMANTIC COMPUTING (ICSC 2025) **, held in Laguna Hills, California.
+This paper was selected for presentation at the 19th International Conference on SEMANTIC COMPUTING (ICSC 2025) , held in Laguna Hills, California.
 If you find our work helpful or interesting, we would appreciate it if you consider citing it!
 
 ```
