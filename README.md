@@ -22,8 +22,12 @@ If you find our work helpful or interesting, we would appreciate it if you consi
 
 ```
 @inproceedings{nong2025YouLeQD,
-  title= {YouLeQD: Decoding the Cognitive Complexity of Questions and Engagement in Online Educational Videos from Learners' Perspectives},
-  author={Nong Ming, Sachin Sharma, Jiho Noh},
-  year={2025}
+  title     = "{YouLeQD: Decoding the Cognitive Complexity of Questions and
+               Engagement in Online Educational Videos from Learners'
+               Perspectives}",
+  author    = "Nong Ming, Sachin Sharma, Jiho Noh",
+  booktitle = "{2025 IEEE 19th International Conference on Semantic Computing
+               (ICSC)}",
+  year      =  2025
 }
 ```
