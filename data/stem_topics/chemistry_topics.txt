@@ -1,0 +1,134 @@
+Atomic orbitals (AO)
+Electron configuration
+Quantum numbers
+Balancing rxns
+Limiting reagents
+Mass conservation
+PES
+More AO filling
+Bohr Model
+e’ transitions
+Ionization
+Lewis structures
+Formal charges
+Lattice energie
+Hybridization
+VSEPR
+Molecular orbitals
+IMFs
+Phases
+Semiconductors
+Band gaps
+Doping
+Crystals
+Atom packing
+Miller planes
+Metals
+X-ray generations
+X-ray diffraction
+Selection rules
+Point defects
+Hume-Rothery rules
+Line defects
+Glasses
+Tg
+Cooling curves
+Tempering
+Network modifiers
+Rxn rates, Rxn orders
+Rate laws/constants
+Plots
+Half-lives
+Acids/bases
+Common ion effect
+pH
+Batteries
+Matter
+Significant figures
+Units and conversions
+Atomic Structure and Introduction to the Periodic Table
+Naming Ionic Compounds
+Naming Molecular Compounds
+Naming Acids
+Chemical Reactions & Chemical Equations
+Calculations With Moles
+Mass Percent and Empirical and Molecular Formulas
+Limiting Reagent Calculations
+Solutions and Electrolytes
+Double Displacement Reactions
+Oxidation-Reduction Reactions
+Molarity and Dilutions
+Solution Stoichiometry
+First Law of Thermodynamics and Enthalpy
+Calorimetry
+Hess’s Law and Enthalpies of Formation
+Nature of Light and the Photoelectric Effect
+Electronic Transitions (Absorption and Emission)
+The de Broglie Relation and the Heisenberg Uncertainty Principle
+Quantum Numbers and Atomic Orbitals
+Electronic Configuration
+Atomic Radius
+Ionization Energy
+Electron Affinity & Electronegativity
+Properties of Elements & Compounds
+Ionic Bonding
+Lewis Dot Structures
+Bond Enthalpy
+VSEPR Theory and Molecular Geometry
+Polarity
+Hybridization
+Sigma and Pi Bonds
+Molecular Orbital Theory
+Properties of Gases
+Gas Laws Including the Ideal Gas Law
+Additional Gas Laws
+Real Gases & the Van der Waals Equation
+Intermolecular Forces
+Phase Diagrams
+Structures of Solids
+Solution Formation and Solubility
+Units of Concentration
+Colligative Properties
+Rate Expressions and the Rate of Reaction
+Rate Laws
+Reaction Mechanisms, Catalysts, and Reaction Coordinate Diagrams
+Collision Theory and the Arrhenius Equation
+Integrated Rate Laws
+Equilibrium and Equilibrium Constants
+Le Chatelier’s Principle
+Equilibrium Calculations (ICE Tables)
+Introduction to Acids and Bases
+Binary Acids, Oxoacids, and Polyprotic Acids
+Introduction to the pH Scale and pH Calculations
+pH Calculations for Strong Acids and Bases
+pH Calculations for Weak Acids and Bases
+Acidity and Basicity of Salts
+Buffers
+Titrations and Titration Curves
+pH Calculations Involving Titrations
+Solubility and Ksp
+Common Ion Effect and Precipitation
+pH Effects on Solubility
+The Laws of Thermodynamics
+Entropy
+Gibbs Free Energy and the Relationship between ΔG, ΔH, & ΔS
+ΔG, ΔH, ΔS, and Formation Reactions
+Gibbs Free Energy and the Equilibrium Constant
+How to Assign Oxidation Numbers
+How to Balance Oxidation Reduction Reactions
+Galvanic Cells
+How to Calculate Standard Cell Potential
+How to Calculate Nonstandard Cell Potential [Nernst Equation]
+Cell Potential, Delta G, and the Equilibrium Constant
+Electrolytic Cells
+Electrolysis Calculations
+Introduction to Nuclear Chemistry
+Balancing Nuclear Reactions
+Spontaneous Routes of Nuclear Decay, Fission, & Fusion
+Kinetics of Nuclear Decay
+Energy of Nuclear Reactions and Nuclear Binding Energy
+Introduction to Coordination Chemistry
+Naming Complex Ions and Coordination Compounds
+Isomers in Coordination Chemistry
+Crystal Field Theory
+Color & Paramagnetism of Coordination Compounds

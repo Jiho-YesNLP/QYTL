@@ -1,0 +1,200 @@
+Instance-based algorithm
+K-nearest neighbors algorithm (KNN)
+Learning vector quantization (LVQ)
+Self-organizing map (SOM)
+Regression analysis
+Logistic regression
+Ordinary least squares regression (OLSR)
+Linear regression
+Stepwise regression
+Multivariate adaptive regression splines (MARS)
+Regularization algorithm
+Ridge regression
+Least Absolute Shrinkage and Selection Operator (LASSO)
+Elastic net
+Least-angle regression (LARS)
+Classifiers
+Probabilistic classifier
+Naive Bayes classifier
+Binary classifier
+Linear classifier
+Hierarchical classifier
+Dimensionality reduction
+Dimensionality reduction
+Canonical correlation analysis (CCA)
+Factor analysis
+Feature extraction
+Feature selection
+Independent component analysis (ICA)
+Linear discriminant analysis (LDA)
+Multidimensional scaling (MDS)
+Non-negative matrix factorization (NMF)
+Partial least squares regression (PLSR)
+Principal component analysis (PCA)
+Principal component regression (PCR)
+Projection pursuit
+Sammon mapping
+t-distributed stochastic neighbor embedding (t-SNE)
+Ensemble learning
+Ensemble learning
+AdaBoost
+Boosting
+Bootstrap aggregating (Bagging)
+Gradient boosted decision tree (GBDT)
+Gradient boosting machine (GBM)
+Random Forest
+Stacked Generalization (blending)
+Meta-learning
+Inductive bias
+Metadata
+Reinforcement learning
+Reinforcement learning
+Q-learning
+State–action–reward–state–action (SARSA)
+Temporal difference learning (TD)
+Learning Automata
+Supervised learning
+Supervised learning
+Averaged one-dependence estimators (AODE)
+Artificial neural network
+Case-based reasoning
+Gaussian process regression
+Gene expression programming
+Group method of data handling (GMDH)
+Inductive logic programming
+Instance-based learning
+Lazy learning
+Learning Automata
+Learning Vector Quantization
+Logistic Model Tree
+Minimum message length (decision trees, decision graphs, etc.)
+Nearest Neighbor Algorithm
+Analogical modeling
+Probably approximately correct learning (PAC) learning
+Ripple down rules, a knowledge acquisition methodology
+Symbolic machine learning algorithms
+Support vector machines
+Random Forests
+Ensembles of classifiers
+Bootstrap aggregating (bagging)
+Boosting (meta-algorithm)
+Ordinal classification
+Conditional Random Field
+ANOVA
+Quadratic classifiers
+k-nearest neighbor
+Boosting
+SPRINT
+Bayesian networks
+Naive Bayes
+Hidden Markov models
+Hierarchical hidden Markov model
+Bayesian
+Bayesian statistics
+Bayesian knowledge base
+Naive Bayes
+Gaussian Naive Bayes
+Multinomial Naive Bayes
+Averaged One-Dependence Estimators (AODE)
+Bayesian Belief Network (BBN)
+Bayesian Network (BN)
+Decision tree algorithms
+Decision tree algorithm
+Decision tree
+Classification and regression tree (CART)
+Iterative Dichotomiser 3 (ID3)
+C4.5 algorithm
+C5.0 algorithm
+Chi-squared Automatic Interaction Detection (CHAID)
+Decision stump
+Conditional decision tree
+ID3 algorithm
+Random forest
+SLIQ
+Linear classifier
+Fisher's linear discriminant
+Linear regression
+Logistic regression
+Multinomial logistic regression
+Naive Bayes classifier
+Perceptron
+Support vector machine
+Unsupervised learning
+Expectation-maximization algorithm
+Vector Quantization
+Generative topographic map
+Information bottleneck method
+Association rule learning algorithms
+Apriori algorithm
+Eclat algorithm
+Artificial neural networks
+Feedforward neural network
+Extreme learning machine
+Convolutional neural network
+Recurrent neural network
+Long short-term memory (LSTM)
+Logic learning machine
+Self-organizing map
+Association rule learning
+Apriori algorithm
+Eclat algorithm
+FP-growth algorithm
+Hierarchical clustering
+Single-linkage clustering
+Conceptual clustering
+Cluster analysis
+BIRCH
+DBSCAN
+Expectation–maximization (EM)
+Fuzzy clustering
+Hierarchical clustering
+k-means clustering
+k-medians
+Mean-shift
+OPTICS algorithm
+Anomaly detection
+k-nearest neighbors algorithm (k-NN)
+Local outlier factor
+Semi-supervised learning
+Active learning – special case of semi-supervised learning in which a learning algorithm is able to interactively query the user (or some other information source) to obtain the desired outputs at new data points.[4][5]
+Generative models
+Low-density separation
+Graph-based methods
+Co-training
+Transduction
+Deep learning
+Deep belief networks
+Deep Boltzmann machines
+Deep Convolutional neural networks
+Deep Recurrent neural networks
+Hierarchical temporal memory
+Generative Adversarial Network
+Style transfer
+Transformer
+Stacked Auto-Encoders
+Other machine learning methods and problems
+Anomaly detection
+Association rules
+Bias-variance dilemma
+Classification
+Multi-label classification
+Clustering
+Data Pre-processing
+Empirical risk minimization
+Feature engineering
+Feature learning
+Learning to rank
+Occam learning
+Online machine learning
+PAC learning
+Regression
+Reinforcement Learning
+Semi-supervised learning
+Statistical learning
+Structured prediction
+Graphical models
+Bayesian network
+Conditional random field (CRF)
+Hidden Markov model (HMM)
+Unsupervised learning
+VC theory
